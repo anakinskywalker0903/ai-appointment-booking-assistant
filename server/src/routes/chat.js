@@ -1,8 +1,6 @@
 import { Router } from 'express';
+import { handleChat } from '../controllers/chatController.js';
 
 export const chatRoutes = Router();
 
-// POST /api/chat — main chat endpoint (wired up in Milestone 5)
-chatRoutes.post('/', (req, res) => {
-  res.json({ message: 'Chat endpoint coming in Milestone 5' });
-});
+chatRoutes.post('/', handleChat);
