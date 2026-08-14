@@ -3,8 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { chatRoutes } from './routes/chat.js';
 import { servicesRoutes } from './routes/services.js';
+import { employeesRoutes } from './routes/employees.js';
 import { appointmentsRoutes } from './routes/appointments.js';
 import { availabilityRoutes } from './routes/availability.js';
+import { calendarRoutes } from './routes/calendar.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -23,8 +25,10 @@ app.use(express.json({ limit: '10kb' })); // prevent huge payloads
 // Routes
 app.use('/api/chat', chatRoutes);
 app.use('/api/services', servicesRoutes);
+app.use('/api/employees', employeesRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/availability', availabilityRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

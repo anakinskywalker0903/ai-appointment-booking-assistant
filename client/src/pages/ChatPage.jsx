@@ -7,7 +7,7 @@ import './ChatPage.css';
 const WELCOME = {
   id: 'welcome',
   role: 'assistant',
-  text: "👋 Hi! I'm your appointment booking assistant.\n\nI can help you **book**, **check availability**, or answer questions about our services.\n\nJust tell me what you need — for example:\n- *\"I want a consultation tomorrow at 3 PM\"*\n- *\"What slots are available on Friday?\"*",
+  text: "👋 Hi! I'm **Aria**, your AI receptionist at **SalonAI**.\n\nI can help you book appointments with our stylists (**Sarah**, **Emma**, or **David**), check availability, or answer questions about our treatments.\n\nTry saying or speaking:\n- *\"I need a haircut this Saturday around 4 PM with Sarah.\"*\n- *\"Is someone available for a hair spa tomorrow afternoon?\"*\n- *\"I'd like a beard trim tomorrow at 3 PM.\"*",
 };
 
 export default function ChatPage() {
@@ -16,9 +16,55 @@ export default function ChatPage() {
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState(null);
   const [pendingBooking, setPendingBooking] = useState(null);
+  const [isListening,    setIsListening]    = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Initialize Web Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = (e) => {
+        console.warn('Speech recognition error:', e.error);
+        setIsListening(false);
+      };
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+        }
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      setError('Voice recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setError(null);
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.warn('Speech start error', err);
+      }
+    }
+  };
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -46,12 +92,10 @@ export default function ChatPage() {
 
     try {
       const history = buildHistory();
-      // Add current user message to history before sending
-      history.push({ role: 'user', parts: [{ text: text.trim() }] });
 
       const { data } = await api.post('/chat', {
         message: text.trim(),
-        history: buildHistory(), // history WITHOUT current message (server adds it)
+        history,
         pendingBooking,
       });
 
@@ -86,18 +130,18 @@ export default function ChatPage() {
     }
   };
 
-  const handleQuickConfirm = () => sendMessage('Yes, please confirm the booking.');
-  const handleQuickCancel  = () => sendMessage('No, cancel the booking.');
+  const handleQuickConfirm = () => sendMessage('Yes, please confirm the appointment.');
+  const handleQuickCancel  = () => sendMessage('No, cancel this booking.');
 
   return (
     <div className="chat-page">
       {/* Header */}
       <header className="chat-header">
         <div className="chat-header-brand">
-          <div className="chat-header-icon">🗓</div>
+          <div className="chat-header-icon">✂️</div>
           <div>
-            <h1>BookingBot</h1>
-            <div className="chat-header-sub">AI Appointment Assistant</div>
+            <h1>SalonAI</h1>
+            <div className="chat-header-sub">Aria · Virtual Receptionist</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -116,7 +160,7 @@ export default function ChatPage() {
         {messages.map(msg => (
           <div key={msg.id} className={`message ${msg.role}`}>
             <div className="message-avatar">
-              {msg.role === 'assistant' ? '🤖' : '👤'}
+              {msg.role === 'assistant' ? '💇‍♀️' : '👤'}
             </div>
             <div className="message-bubble">
               <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -129,7 +173,7 @@ export default function ChatPage() {
                   </div>
                   <div className="confirm-card-actions">
                     <button id="btn-confirm-booking" className="btn btn-success" onClick={handleQuickConfirm} disabled={loading}>
-                      ✓ Confirm
+                      ✓ Confirm Booking
                     </button>
                     <button id="btn-cancel-booking" className="btn btn-danger" onClick={handleQuickCancel} disabled={loading}>
                       ✗ Cancel
@@ -142,7 +186,7 @@ export default function ChatPage() {
               {msg.appointment && (
                 <div className="confirm-card" style={{ marginTop: 12 }}>
                   <div style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>
-                    ✅ Booking Confirmed
+                    ✅ Appointment Confirmed
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                     ID: {msg.appointment.id?.slice(0, 8).toUpperCase()}
@@ -157,7 +201,7 @@ export default function ChatPage() {
         {loading && (
           <div className="typing">
             <div className="message-avatar" style={{ background: 'var(--accent-dim)', color: 'var(--accent-light)', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
-              🤖
+              💇‍♀️
             </div>
             <div className="typing-dots">
               <span /><span /><span />
@@ -186,11 +230,30 @@ export default function ChatPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message... (e.g. 'Book a consultation tomorrow at 3 PM')"
+            placeholder={isListening ? "Listening... speak now 🎙️" : "Type or speak... (e.g. 'I want a haircut with Sarah tomorrow at 4 PM')"}
             rows={1}
             disabled={loading}
             aria-label="Chat message input"
+            style={isListening ? { borderColor: 'var(--danger)', background: 'rgba(239, 68, 68, 0.05)' } : {}}
           />
+
+          {/* Voice Input Button */}
+          <button
+            type="button"
+            id="btn-voice-input"
+            onClick={toggleListening}
+            className={`send-btn ${isListening ? 'listening' : ''}`}
+            style={{
+              background: isListening ? 'var(--danger)' : 'var(--bg-input)',
+              color: isListening ? '#fff' : 'var(--text-primary)',
+              border: '1px solid var(--border)',
+            }}
+            title={isListening ? "Stop listening" : "Speak your message"}
+            aria-label="Voice input"
+          >
+            {isListening ? '🛑' : '🎙️'}
+          </button>
+
           <button
             id="send-btn"
             type="submit"
@@ -201,7 +264,9 @@ export default function ChatPage() {
             ➤
           </button>
         </form>
-        <div className="chat-hint">Press Enter to send · Shift+Enter for new line</div>
+        <div className="chat-hint">
+          {isListening ? "🎙️ Recording... speak your request" : "Press Enter to send · 🎙️ Mic for voice input"}
+        </div>
       </div>
     </div>
   );

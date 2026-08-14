@@ -30,6 +30,11 @@ const intentSchema = {
       nullable: true,
       description: 'Appointment time in HH:MM 24-hour format, or null',
     },
+    employeePreference: {
+      type: SchemaType.STRING,
+      nullable: true,
+      description: 'Name of preferred stylist/employee if mentioned, or null if no preference',
+    },
     customerName: {
       type: SchemaType.STRING,
       nullable: true,
@@ -64,12 +69,13 @@ const intentSchema = {
  * @param {string} userMessage - Latest user message
  * @param {Array}  history     - [{role: 'user'|'model', parts: [{text}]}]
  * @param {Array}  services    - Active services from DB
+ * @param {Array}  employees   - Active employees from DB
  * @returns {Object} Structured intent object
  */
-export async function extractIntent(userMessage, history, services) {
+export async function extractIntent(userMessage, history, services, employees = []) {
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
-    systemInstruction: buildSystemPrompt(services),
+    systemInstruction: buildSystemPrompt(services, employees),
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: intentSchema,

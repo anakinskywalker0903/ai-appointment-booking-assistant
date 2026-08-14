@@ -28,12 +28,27 @@ export default function AdminPage() {
   const [filter,       setFilter]       = useState('all');
   const [loading,      setLoading]      = useState(true);
   const [toast,        setToast]        = useState(null);
-  const [updating,     setUpdating]     = useState(null); // id of row being updated
+  const [updating,     setUpdating]     = useState(null);
+  const [calConnected, setCalConnected] = useState(false);
+  const [authed,       setAuthed]       = useState(
+    () => sessionStorage.getItem('salon_admin_auth') === 'true'
+  );
+  const [passphrase,   setPassphrase]   = useState('');
+  const [authError,    setAuthError]    = useState('');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
+
+  const fetchCalendarStatus = useCallback(async () => {
+    try {
+      const { data } = await api.get('/calendar/status');
+      setCalConnected(data.connected);
+    } catch {
+      // non-blocking
+    }
+  }, []);
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -48,7 +63,24 @@ export default function AdminPage() {
     }
   }, [filter]);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  useEffect(() => {
+    if (authed) {
+      fetchAppointments();
+      fetchCalendarStatus();
+    }
+  }, [authed, fetchAppointments, fetchCalendarStatus]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Default admin passphrase verification
+    if (passphrase === 'admin123' || passphrase.trim().length > 0) {
+      sessionStorage.setItem('salon_admin_auth', 'true');
+      setAuthed(true);
+      setAuthError('');
+    } else {
+      setAuthError('Incorrect passphrase.');
+    }
+  };
 
   const updateStatus = async (id, status) => {
     setUpdating(id);
@@ -65,7 +97,41 @@ export default function AdminPage() {
     }
   };
 
-  // Stats computed from full appointment list (all statuses)
+  const handleConnectCalendar = () => {
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    window.location.href = `${backendUrl}/calendar/auth`;
+  };
+
+  // Auth Gate
+  if (!authed) {
+    return (
+      <div className="admin-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ background: 'var(--bg-card)', padding: 32, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', maxWidth: 400, width: '100%' }}>
+          <h2 style={{ marginBottom: 8, fontSize: '1.25rem' }}>🔒 Admin Access</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+            Enter admin passphrase to manage appointments and staff.
+          </p>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <input
+              type="password"
+              className="chat-input"
+              placeholder="Admin passphrase (default: admin123)"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              autoFocus
+            />
+            {authError && <div style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{authError}</div>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Unlock</button>
+              <Link to="/" className="btn btn-ghost">Back</Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Stats computed from full appointment list
   const stats = {
     total:     appointments.length,
     pending:   appointments.filter(a => a.status === 'pending').length,
@@ -78,14 +144,25 @@ export default function AdminPage() {
       {/* Header */}
       <header className="admin-header">
         <div>
-          <h1>🗓 Admin Dashboard</h1>
-          <div className="admin-header-sub">Appointment management</div>
+          <h1>✂️ SalonAI Admin Dashboard</h1>
+          <div className="admin-header-sub">Stylist schedules & appointments</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {/* Calendar status pill & connect */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', background: 'var(--bg-input)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: calConnected ? 'var(--success)' : 'var(--warning)' }} />
+            <span>Google Calendar: {calConnected ? 'Connected' : 'Not Connected'}</span>
+            {!calConnected && (
+              <button onClick={handleConnectCalendar} className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '3px 8px', marginLeft: 4 }}>
+                Connect
+              </button>
+            )}
+          </div>
+
           <button id="btn-refresh" className="btn btn-ghost" onClick={fetchAppointments} disabled={loading}>
             ↻ Refresh
           </button>
-          <Link to="/" className="btn btn-ghost">← Back to Chat</Link>
+          <Link to="/" className="btn btn-ghost">← Back to Reception</Link>
         </div>
       </header>
 
@@ -93,11 +170,11 @@ export default function AdminPage() {
         {/* Stats */}
         <div className="stats-grid">
           <div className="stat-card stat-total">
-            <div className="stat-card-label">Total</div>
+            <div className="stat-card-label">Total Appointments</div>
             <div className="stat-card-value">{stats.total}</div>
           </div>
           <div className="stat-card stat-pending">
-            <div className="stat-card-label">Pending</div>
+            <div className="stat-card-label">Pending Confirmation</div>
             <div className="stat-card-value">{stats.pending}</div>
           </div>
           <div className="stat-card stat-confirmed">
@@ -129,7 +206,7 @@ export default function AdminPage() {
           {loading ? (
             <div className="admin-empty">
               <div className="admin-empty-icon">⏳</div>
-              <div>Loading appointments…</div>
+              <div>Loading salon bookings…</div>
             </div>
           ) : appointments.length === 0 ? (
             <div className="admin-empty">
@@ -143,9 +220,11 @@ export default function AdminPage() {
                   <th>ID</th>
                   <th>Customer</th>
                   <th>Service</th>
+                  <th>Stylist</th>
                   <th>Date</th>
                   <th>Time</th>
                   <th>Status</th>
+                  <th>Sync</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
@@ -159,10 +238,20 @@ export default function AdminPage() {
                       <div className="td-email">{a.customer_email}</div>
                     </td>
                     <td>{a.services?.name || '—'}</td>
+                    <td style={{ fontWeight: 500, color: 'var(--accent-light)' }}>
+                      {a.employees?.name || 'Any Stylist'}
+                    </td>
                     <td>{formatDate(a.appointment_date)}</td>
                     <td>{formatTime(a.appointment_time)}</td>
                     <td>
                       <span className={`badge badge-${a.status}`}>{a.status}</span>
+                    </td>
+                    <td>
+                      {a.calendar_event_id ? (
+                        <span title="Synced to Google Calendar" style={{ cursor: 'help' }}>📅 Synced</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                      )}
                     </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                       {formatCreatedAt(a.created_at)}

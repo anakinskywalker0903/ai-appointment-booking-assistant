@@ -3,6 +3,12 @@
 .env.local
 .env.*.local
 
+# Tokens & OAuth Credentials
+server/tokens/
+tokens/
+google-tokens.json
+google-service-account.json
+
 # Dependencies
 node_modules/
 client/node_modules/

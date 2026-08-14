@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import dayjs from 'dayjs';
 import { supabase } from '../db/supabase.js';
+import { isSlotAvailable } from '../services/availabilityService.js';
+import { deleteCalendarEvent } from '../services/calendarService.js';
 
 // ── Validation schemas ──────────────────────────────────────────────────────
 
@@ -8,6 +10,7 @@ const createAppointmentSchema = z.object({
   customerName:    z.string().min(1, 'Customer name is required').max(100),
   customerEmail:   z.string().email('Invalid email address'),
   serviceId:       z.string().uuid('Invalid service ID'),
+  employeeId:      z.string().uuid('Invalid employee ID').optional(),
   appointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   appointmentTime: z.string().regex(/^\d{2}:\d{2}$/, 'Time must be HH:MM'),
   notes:           z.string().max(500).optional(),
@@ -45,8 +48,10 @@ export async function getAppointments(req, res, next) {
         appointment_time,
         status,
         notes,
+        calendar_event_id,
         created_at,
-        services ( id, name, duration_minutes )
+        services ( id, name, duration_minutes ),
+        employees ( id, name, role )
       `)
       .order('appointment_date', { ascending: true })
       .order('appointment_time', { ascending: true });
@@ -79,7 +84,7 @@ export async function createAppointment(req, res, next) {
       });
     }
 
-    const { customerName, customerEmail, serviceId, appointmentDate, appointmentTime, notes } = parsed.data;
+    const { customerName, customerEmail, serviceId, employeeId, appointmentDate, appointmentTime, notes } = parsed.data;
 
     // 2. Reject past dates/times
     if (isDateInPast(appointmentDate, appointmentTime)) {
@@ -98,17 +103,25 @@ export async function createAppointment(req, res, next) {
       return res.status(400).json({ error: 'The requested service does not exist or is unavailable.' });
     }
 
-    // 4. Check slot availability (unique constraint would also catch this, but give a friendly error first)
-    const { data: existing } = await supabase
-      .from('appointments')
-      .select('id')
-      .eq('appointment_date', appointmentDate)
-      .eq('appointment_time', appointmentTime)
-      .neq('status', 'cancelled') // cancelled slots are free again
-      .maybeSingle();
+    // 4. Verify employee if provided
+    let assignedEmployeeId = employeeId;
+    if (assignedEmployeeId) {
+      const { data: emp, error: empErr } = await supabase
+        .from('employees')
+        .select('id, name, is_active')
+        .eq('id', assignedEmployeeId)
+        .eq('is_active', true)
+        .single();
 
-    if (existing) {
-      return res.status(409).json({ error: 'That time slot is already booked. Please choose a different time.' });
+      if (empErr || !emp) {
+        return res.status(400).json({ error: 'The requested employee is invalid or inactive.' });
+      }
+
+      // Check slot availability for this employee
+      const slotFree = await isSlotAvailable(assignedEmployeeId, appointmentDate, appointmentTime);
+      if (!slotFree) {
+        return res.status(409).json({ error: 'That time slot is already booked for this stylist. Please choose a different time.' });
+      }
     }
 
     // 5. Create the appointment
@@ -118,6 +131,7 @@ export async function createAppointment(req, res, next) {
         customer_name:    customerName,
         customer_email:   customerEmail,
         service_id:       serviceId,
+        employee_id:      assignedEmployeeId || null,
         appointment_date: appointmentDate,
         appointment_time: appointmentTime,
         notes:            notes || null,
@@ -132,14 +146,14 @@ export async function createAppointment(req, res, next) {
         status,
         notes,
         created_at,
-        services ( id, name, duration_minutes )
+        services ( id, name, duration_minutes ),
+        employees ( id, name, role )
       `)
       .single();
 
     if (insertError) {
-      // Handle unique constraint violation as a fallback
       if (insertError.code === '23505') {
-        return res.status(409).json({ error: 'That time slot was just booked. Please choose a different time.' });
+        return res.status(409).json({ error: 'That time slot was just booked for this stylist. Please choose a different time.' });
       }
       throw insertError;
     }
@@ -169,11 +183,18 @@ export async function updateAppointmentStatus(req, res, next) {
       .from('appointments')
       .update({ status: parsed.data.status })
       .eq('id', id)
-      .select('id, status, customer_name, appointment_date, appointment_time')
+      .select('id, status, customer_name, appointment_date, appointment_time, calendar_event_id')
       .single();
 
     if (error || !appointment) {
       return res.status(404).json({ error: 'Appointment not found.' });
+    }
+
+    // If cancelled and calendar event exists, delete event from calendar
+    if (parsed.data.status === 'cancelled' && appointment.calendar_event_id) {
+      deleteCalendarEvent(appointment.calendar_event_id).catch(err =>
+        console.error('[Calendar Cancel Error]', err.message)
+      );
     }
 
     res.json({ appointment });
