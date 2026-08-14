@@ -1,8 +1,6 @@
 import { Router } from 'express';
+import { getServices } from '../controllers/servicesController.js';
 
 export const servicesRoutes = Router();
 
-// GET /api/services — implemented in Milestone 3
-servicesRoutes.get('/', (req, res) => {
-  res.json({ message: 'Services endpoint coming in Milestone 3' });
-});
+servicesRoutes.get('/', getServices);
