@@ -39,25 +39,14 @@
 
 # 📝 Part 1: Problem Understanding (NO AI)
 
-### The Problem
-Traditional salon and service booking workflows suffer from friction, rigid web forms, and communication bottlenecks:
-1. **Clunky multi-step forms:** Customers are forced to navigate static dropdowns, static calendars, and multi-page wizards that fail to understand flexible human preferences (e.g., *"I need a haircut and styling sometime next Tuesday afternoon with Sarah"*).
-2. **High administrative overhead:** Salon owners spend hours manually coordinating phone bookings, resolving double-booked slots, updating paper schedules, and notifying clients.
-3. **Absence of immediate multi-channel confirmation:** When bookings occur, clients often experience uncertainty regarding whether their appointment was accepted, whether their calendar is updated, and whether reminders are scheduled.
+### Abstract (Problem & Key User Flows)
 
-### The Solution: StylistAI
-StylistAI transforms appointment scheduling from a tedious form-filling chore into a seamless, natural conversation:
-* **Conversational Natural Language Booking:** Clients interact with an AI assistant (Aria) via text or voice, expressing their needs naturally with fuzzy dates, stylist preferences, and complex multi-requirement queries.
-* **Real-Time Visual Selection Cloud & Interactive Slot Cards:** Extracted parameters (service, stylist, date, time, estimated cost) float visually alongside the chat in real time, accompanied by interactive confirmation cards.
-* **Automated Two-Way Confirmation & Calendar Sync:** Upon confirmation, the booking is committed to Supabase PostgreSQL, an event with automated 24h/30m reminders is created on Google Calendar via OAuth 2.0, and an email confirmation receipt is dispatched via EmailJS.
-* **Unified Admin Operations Portal:** Salon managers have complete oversight through live KPI analytics, schedule timelines, full appointment tables with instant status actions, staff directories, and model telemetry logs.
+Booking appointments online is often frustrating for customers and time-consuming for salon owners. Most existing booking websites force people to click through rigid multi-step forms, static dropdowns, and date pickers. If a customer wants something simple and natural—like *"I need a haircut with Sarah next Tuesday afternoon"*—traditional forms can't handle that intent. On the other side, salon owners spend valuable time managing phone calls, checking calendar clashes, fixing double-bookings, and sending manual confirmations.
 
-### Key User Flows
-```
-[Customer Speaks/Types Intent] ──► [Groq LLaMA 3.3 Intent Extraction] ──► [Live Availability Check (Supabase + Google Cal)]
-                                                                                     │
-[Email Confirmation Sent] ◄── [Google Calendar Event Synced] ◄── [Customer Confirms Slot] ◄── [Interactive Slot Card Rendered]
-```
+**What I set out to build:**  
+I created **StylistAI** to turn appointment scheduling into a smooth, natural conversation:
+1. **Customer Flow:** A client opens the website and chats (or speaks) with an AI assistant named Aria. As they talk, the system extracts the requested service, stylist preference, date, time, and estimated price in real time. When the customer confirms the suggested slot card, the booking is saved to the database, a confirmation receipt is sent to their email via EmailJS, and an event is scheduled on Google Calendar.
+2. **Admin Flow:** The salon owner accesses a dedicated management dashboard (`/admin`) with passphrase `admin123`. From here, they can view all live appointments, search and filter bookings, update statuses, manage staff schedules, and monitor calendar synchronization.
 
 ---
 
