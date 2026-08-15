@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import dayjs from 'dayjs';
-import { extractIntent } from '../ai/gemini.js';
+import { extractIntent } from '../ai/groq.js';
 import { supabase } from '../db/supabase.js';
 import {
   getEmployeesForService,
@@ -82,7 +82,7 @@ export async function handleChat(req, res, next) {
     try {
       intentResult = await extractIntent(message, history, services, employees);
     } catch (aiError) {
-      console.error('[Gemini Error]', aiError.message);
+      console.error('[AI Error]', aiError.message);
       return res.json({
         message: "I'm sorry, I had a little trouble understanding that. Could you please rephrase?",
         pendingBooking: pendingBooking || null,
@@ -91,7 +91,7 @@ export async function handleChat(req, res, next) {
 
     const { intent, usage } = intentResult;
     if (usage) {
-      console.log(`[Gemini Usage] in:${usage.promptTokenCount} out:${usage.candidatesTokenCount} total:${usage.totalTokenCount}`);
+      console.log(`[AI Usage] in:${usage.promptTokenCount} out:${usage.candidatesTokenCount} total:${usage.totalTokenCount}`);
     }
 
     // ── Route on intent ────────────────────────────────────────────────────

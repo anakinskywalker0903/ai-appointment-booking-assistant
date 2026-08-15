@@ -2,38 +2,63 @@ import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
 
 /**
- * Scrollable chat message list with typing indicator.
- * messages: Array<{ id, role, text, appointment? }>
- * pendingBooking: object | null  — controls confirm/cancel quick actions
- * loading: boolean
- * onConfirm: fn
- * onCancel: fn
+ * Scrollable chat message list with avatars, typing indicator, and inline suggested slots card.
  */
 export default function ChatWindow({ messages, pendingBooking, loading, onConfirm, onCancel }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, pendingBooking]);
 
   const lastMsgId = messages[messages.length - 1]?.id;
+
+  function formatTime(t) {
+    if (!t) return '';
+    const [hh, mm] = t.split(':').map(Number);
+    return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`;
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
 
   return (
     <div className="chat-window" role="log" aria-live="polite">
       {messages.map(msg => (
         <MessageBubble key={msg.id} role={msg.role} text={msg.text}>
 
-          {/* Quick-action buttons when a booking is pending — only on last AI message */}
+          {/* Inline Suggested Slot Card (Matching the reference design!) */}
           {msg.role === 'assistant' && pendingBooking && msg.id === lastMsgId && (
-            <div className="quick-actions">
-              <button className="btn btn-success" onClick={onConfirm}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span>
-                Confirm Booking
-              </button>
-              <button className="btn btn-danger" onClick={onCancel}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>cancel</span>
-                Cancel
-              </button>
+            <div className="inline-slot-container">
+              <div className="inline-slot-label">SUGGESTED SLOT</div>
+              <div className="inline-slot-card neo-shadow-md">
+                <div className="inline-slot-header">
+                  <span className="inline-slot-date">{formatDate(pendingBooking.date)}</span>
+                  <span className="inline-slot-duration">{pendingBooking.durationMin || 45} mins</span>
+                </div>
+
+                <div className="inline-slot-body">
+                  <div className="inline-slot-time">{formatTime(pendingBooking.time)}</div>
+                  <div className="inline-slot-service">{pendingBooking.serviceName}</div>
+                  <div className="inline-slot-stylist">
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>badge</span>
+                    Stylist: <strong>{pendingBooking.employeeName}</strong>
+                  </div>
+                </div>
+
+                <div className="inline-slot-actions">
+                  <button className="btn btn-primary" onClick={onConfirm} style={{ flex: 1, justifyContent: 'center' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span>
+                    Confirm
+                  </button>
+                  <button className="btn btn-ghost" onClick={onCancel} style={{ justifyContent: 'center' }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -47,8 +72,12 @@ export default function ChatWindow({ messages, pendingBooking, loading, onConfir
         </MessageBubble>
       ))}
 
+      {/* Typing indicator with AI Avatar */}
       {loading && (
         <div className="msg-row msg-row--ai">
+          <div className="msg-avatar msg-avatar--ai" title="StylistAI Assistant">
+            <span className="material-symbols-outlined fill" style={{ fontSize: 18 }}>smart_toy</span>
+          </div>
           <div className="typing-dots">
             <span /><span /><span />
           </div>

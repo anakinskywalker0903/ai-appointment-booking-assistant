@@ -46,12 +46,44 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* Custom Orange Arrow Cursor with Black Outline */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24'%3E%3Cpath d='M4 2l6.5 18 3.5-7 7-3.5L4 2z' fill='%23FF6F20' stroke='%23000000' stroke-width='2.2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 3 3, auto;
+}
+
+button, a, .btn, [role="button"], input[type="submit"], input[type="button"] {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24'%3E%3Cpath d='M4 2l6.5 18 3.5-7 7-3.5L4 2z' fill='%23FF8C42' stroke='%23000000' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 3 3, pointer;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--silver); border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #ffffff;
+  border: 2px solid #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--orange);
+  border: 2px solid #000000;
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--orange-hover);
+}
+::-webkit-scrollbar-corner {
+  background: #000000;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: var(--orange) #ffffff;
+}
+
+/* ── Selection & caret ──────────────────────────────────────────────────── */
+::selection { background: var(--orange); color: #fff; }
+input, textarea { caret-color: var(--orange); }
 
 /* ── Material Icons ──────────────────────────────────────────────────────── */
 .material-symbols-outlined {
@@ -124,3 +156,15 @@ body {
 .badge-pending   { background: var(--blue-light);  color: var(--charcoal-dark); }
 .badge-confirmed { background: var(--blue-light);  color: var(--charcoal-dark); }
 .badge-cancelled { background: var(--error-bg);    color: var(--error); }
+
+/* ── Global Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    min-height: 40px;  /* touch-friendly tap target */
+  }
+
+  /* Prevent horizontal overflow on mobile */
+  html, body { overflow-x: hidden; }
+}

@@ -9,7 +9,7 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
+    "groq-sdk": "^0.18.0",
     "@supabase/supabase-js": "^2.50.5",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",

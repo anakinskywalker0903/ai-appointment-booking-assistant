@@ -1,0 +1,7 @@
+{
+  "name": "stylistai",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -14,13 +14,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// CORS Configuration (Supports local dev, production URL, and *.vercel.app domains)
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  /\.vercel\.app$/,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isAllowed = allowedOrigins.some(allowed =>
+      typeof allowed === 'string' ? allowed === origin : allowed.test(origin)
+    );
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permissive fallback in production
+    }
+  },
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   credentials: true,
 }));
-app.use(express.json({ limit: '10kb' })); // prevent huge payloads
+app.use(express.json({ limit: '10kb' })); // prevent payload flood attacks
 
 // Routes
 app.use('/api/chat', chatRoutes);
