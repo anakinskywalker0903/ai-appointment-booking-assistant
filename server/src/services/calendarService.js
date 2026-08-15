@@ -183,6 +183,7 @@ export async function createCalendarEvent(booking) {
   try {
     const res = await calendar.events.insert({
       calendarId,
+      sendUpdates: 'all', // Sends calendar invite & .ics to attendee email
       requestBody: {
         summary: `${booking.serviceName} — ${booking.customerName}`,
         description: `Stylist: ${booking.employeeName || 'Assigned Stylist'}\nService: ${booking.serviceName}\nCustomer: ${booking.customerName} (${booking.customerEmail})`,
