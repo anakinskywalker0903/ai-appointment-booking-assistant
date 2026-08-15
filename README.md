@@ -16,7 +16,6 @@
 * **Admin Dashboard:** [https://ai-appointment-booking-assistant.vercel.app/admin](https://ai-appointment-booking-assistant.vercel.app/admin) *(Passphrase: `admin123`)*
 * **Backend API (Health Endpoint):** [https://ai-appointment-booking-assistant.onrender.com/api/health](https://ai-appointment-booking-assistant.onrender.com/api/health)
 * **Architecture & System Guide:** [`HOW_IT_WORKS.md`](./HOW_IT_WORKS.md)
-* **Demo Video Voiceover Script:** [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md)
 
 ---
 
