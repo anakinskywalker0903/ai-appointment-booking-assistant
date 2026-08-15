@@ -20,8 +20,21 @@ export async function sendBookingEmail(appointment) {
   }
 
   // Format date and time
-  const dateStr = appointment.appointment_date || appointment.date;
-  const timeStr = (appointment.appointment_time || appointment.time || '').slice(0, 5);
+  function formatTime(t) {
+    if (!t) return '';
+    const [hh, mm] = t.split(':').map(Number);
+    const period = hh >= 12 ? 'PM' : 'AM';
+    return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${period}`;
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  const rawDate = appointment.appointment_date || appointment.date;
+  const rawTime = (appointment.appointment_time || appointment.time || '').slice(0, 5);
   const serviceName = appointment.services?.name || appointment.serviceName || 'Salon Service';
   const employeeName = appointment.employees?.name || appointment.employeeName || 'Stylist';
   const customerName = appointment.customer_name || appointment.customerName || 'Valued Customer';
@@ -34,8 +47,8 @@ export async function sendBookingEmail(appointment) {
     booking_id: bookingId,
     service_name: serviceName,
     stylist_name: employeeName,
-    appointment_date: dateStr,
-    appointment_time: timeStr,
+    appointment_date: formatDate(rawDate),
+    appointment_time: formatTime(rawTime),
     salon_name: 'StylistAI Salon',
     salon_contact: 'support@stylistai.com',
   };

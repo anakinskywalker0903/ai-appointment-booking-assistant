@@ -88,7 +88,7 @@ export default function BookingCloudPanel({
             {chips.map((chip, i) => (
               <div
                 key={chip.key}
-                className="cloud-chip"
+                className={`cloud-chip ${chip.key === 'email' ? 'cloud-chip--wide' : ''}`}
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="cloud-chip-header">

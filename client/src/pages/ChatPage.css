@@ -711,10 +711,16 @@
   box-shadow: 2px 2px 0px #000000;
   animation: bubble-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transition: transform 0.12s, box-shadow 0.12s;
+  min-width: 0;
+  overflow: hidden;
 }
 .cloud-chip:hover {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0px var(--orange);
+}
+
+.cloud-chip--wide {
+  grid-column: 1 / -1;
 }
 
 .cloud-chip-header {
@@ -737,10 +743,13 @@
 }
 
 .cloud-chip-val {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: var(--charcoal-dark);
-  line-height: 1.2;
+  line-height: 1.25;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 @keyframes bubble-pop {
