@@ -33,6 +33,14 @@ export async function sendBookingEmail(appointment) {
     return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  const SERVICE_PRICES = {
+    'Haircut': '$45',
+    'Hair Spa': '$65',
+    'Hair Coloring': '$95',
+    'Facial': '$55',
+    'Beard Trim': '$25',
+  };
+
   const rawDate = appointment.appointment_date || appointment.date;
   const rawTime = (appointment.appointment_time || appointment.time || '').slice(0, 5);
   const serviceName = appointment.services?.name || appointment.serviceName || 'Salon Service';
@@ -40,6 +48,7 @@ export async function sendBookingEmail(appointment) {
   const customerName = appointment.customer_name || appointment.customerName || 'Valued Customer';
   const customerEmail = appointment.customer_email || appointment.customerEmail;
   const bookingId = (appointment.id || 'BK-' + Date.now()).slice(0, 8).toUpperCase();
+  const servicePrice = SERVICE_PRICES[serviceName] || '$45';
 
   const templateParams = {
     to_name: customerName,
@@ -49,6 +58,7 @@ export async function sendBookingEmail(appointment) {
     stylist_name: employeeName,
     appointment_date: formatDate(rawDate),
     appointment_time: formatTime(rawTime),
+    estimated_cost: servicePrice,
     salon_name: 'StylistAI Salon',
     salon_contact: 'support@stylistai.com',
   };
