@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TOKEN_PATH = path.join(__dirname, '../../tokens/google-tokens.json');
 
 const SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.readonly',
 ];
@@ -114,12 +115,21 @@ export async function verifyCalendarAccess() {
   }
 
   const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
-  const res = await calendar.calendars.get({ calendarId });
-  return {
-    id: res.data.id,
-    summary: res.data.summary,
-    timeZone: res.data.timeZone,
-  };
+  try {
+    const res = await calendar.calendars.get({ calendarId });
+    return {
+      id: res.data.id,
+      summary: res.data.summary,
+      timeZone: res.data.timeZone,
+    };
+  } catch (err) {
+    console.warn('[Calendar metadata get fallback]:', err.message);
+    return {
+      id: calendarId,
+      summary: 'Primary Salon Calendar',
+      timeZone: process.env.TZ || 'Asia/Kolkata',
+    };
+  }
 }
 
 /**
