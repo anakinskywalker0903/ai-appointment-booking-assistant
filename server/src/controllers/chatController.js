@@ -99,10 +99,10 @@ export async function handleChat(req, res, next) {
 
       case 'BOOK_APPOINTMENT': {
         // ── Confirmation of pending booking ──────────────────────────────
-        if (pendingBooking && (intent.confirmationResponse === 'YES' || /yes|confirm|book it|sure|please/i.test(message))) {
+        if (pendingBooking && (intent.confirmationResponse === 'YES' || /^(yes|confirm|book it|sure|please|ok|yep|proceed|do it|sounds good|go ahead|yes please)/i.test(message.trim()) || /yes|confirm|book it/i.test(message))) {
           return await confirmBooking(pendingBooking, res, next);
         }
-        if (pendingBooking && (intent.confirmationResponse === 'NO' || /no|cancel|nevermind|stop/i.test(message))) {
+        if (pendingBooking && (intent.confirmationResponse === 'NO' || /^(no|cancel|nevermind|stop|dont|don't)/i.test(message.trim()))) {
           return res.json({
             message: "No problem at all! The booking has been cancelled. Let me know if there's another time or service you'd like to try.",
             pendingBooking: null,

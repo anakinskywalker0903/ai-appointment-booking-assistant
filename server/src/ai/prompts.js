@@ -59,16 +59,16 @@ YOUR TASK:
 Analyze the customer's message and conversation history, then return a JSON object.
 
 EXTRACTION RULES:
-1. intent: Classify as BOOK_APPOINTMENT, CHECK_AVAILABILITY, CANCEL_APPOINTMENT, or GENERAL
+1. intent: Classify as BOOK_APPOINTMENT, CHECK_AVAILABILITY, CANCEL_APPOINTMENT, or GENERAL. If customer is answering "yes", "confirm", "sure", "ok" to a booking summary, classify as BOOK_APPOINTMENT with confirmationResponse: "YES".
 2. service: Match exactly to a service name (case-insensitive) from [${serviceNames.join(', ')}]. If not in list, set null and ask.
 3. date: Resolve relative dates using the dates above. Output YYYY-MM-DD.
 4. time: Convert to HH:MM 24-hour. "3 PM" → "15:00", "around 3" → "15:00", "morning/afternoon" → null (ask).
 5. employeePreference: ALWAYS extract the exact stylist name if mentioned by the customer (e.g. "David", "Sarah", "Emma"), REGARDLESS of whether that stylist offers the requested service or not. NEVER auto-replace the customer's chosen stylist with another stylist in this field. Only set to null if the customer explicitly says "anyone is fine", "no preference", or doesn't mention any stylist name.
-6. customerName: Full name if mentioned, otherwise null.
-7. customerEmail: Email if mentioned, otherwise null.
-8. confirmationResponse: "YES" if confirming a booking, "NO" if declining. Otherwise null.
+6. customerName: Extract whatever name is provided anywhere in the message (e.g. "for Temp", "for Rohit", "name is Alex", "Temp (temp@...)"). Extract single words or nicknames as the name. Never leave null if a name is given.
+7. customerEmail: Extract any email address provided (e.g. "temp42672@gmail.com").
+8. confirmationResponse: Set to "YES" if customer agrees/confirms ("yes", "confirm", "yep", "sure", "book it", "proceed", "ok", "sounds good"). Set to "NO" if declining ("no", "cancel", "nevermind"). Otherwise null.
 9. missingFields: For BOOK_APPOINTMENT, list fields that are still null from: ["service","date","time","customerName","customerEmail"]
-10. message: Your friendly reply to the customer. Ask for ONE missing piece at a time.
+10. message: Your friendly reply to the customer. If all 5 fields are present, summarize warmly and ask: "Shall I confirm this appointment for you?"
 
 IMPORTANT RULES:
 - NEVER make up services, staff, or availability. The backend verifies everything.

@@ -655,16 +655,16 @@ export default function AdminPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
               <div className="admin-status-card">
                 <div>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--charcoal-light)' }}>SERVICE ID</div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 900, fontFamily: 'monospace' }}>service_x5ilfgg</div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--success)' }}>Connected</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--charcoal-light)' }}>EMAIL DISPATCH ENGINE</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--charcoal-dark)' }}>EmailJS Gateway</div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--success)' }}>● Connected & Active</div>
                 </div>
               </div>
               <div className="admin-status-card">
                 <div>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--charcoal-light)' }}>TEMPLATE ID</div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 900, fontFamily: 'monospace' }}>template_3d6qm2j</div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--success)' }}>Active (Mobile Responsive)</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--charcoal-light)' }}>CONFIRMATION TEMPLATE</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--charcoal-dark)' }}>Universal HTML Table</div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--success)' }}>● Mobile Responsive</div>
                 </div>
               </div>
               <div className="admin-status-card">
