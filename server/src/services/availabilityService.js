@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { supabase } from '../db/supabase.js';
+import { getCalendarClient, isConnected as isCalendarConnected } from './calendarService.js';
 
 const BUSINESS_START = 9;   // 9:00 AM
 const BUSINESS_END   = 18;  // 6:00 PM
@@ -39,12 +40,12 @@ export async function getEmployeesForService(serviceId) {
 }
 
 /**
- * Get booked time slots for a specific employee on a date.
+ * Get booked time slots for a specific employee on a date from Supabase.
  * @param {string} employeeId
  * @param {string} date - YYYY-MM-DD
  * @returns {Set<string>} booked HH:MM times
  */
-export async function getBookedSlotsForEmployee(employeeId, date) {
+export async function getSupabaseBookedSlots(employeeId, date) {
   const { data, error } = await supabase
     .from('appointments')
     .select('appointment_time')
@@ -58,43 +59,130 @@ export async function getBookedSlotsForEmployee(employeeId, date) {
 }
 
 /**
- * Get available slots for a specific employee on a date.
- * Filters past slots if date is today.
+ * Get busy intervals from Google Calendar for a given date in IST.
+ * Returns array of { startMinutes, endMinutes }.
  */
-export async function getAvailableSlotsForEmployee(employeeId, date) {
-  const bookedTimes = await getBookedSlotsForEmployee(employeeId, date);
+export async function getGoogleCalendarBusyIntervals(dateStr) {
+  if (!isCalendarConnected()) return [];
+
+  const calendar = getCalendarClient();
+  if (!calendar) return [];
+
+  try {
+    const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
+    const timeMin = new Date(`${dateStr}T00:00:00+05:30`).toISOString();
+    const timeMax = new Date(`${dateStr}T23:59:59+05:30`).toISOString();
+
+    const res = await calendar.events.list({
+      calendarId,
+      timeMin,
+      timeMax,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const intervals = [];
+    for (const item of res.data.items || []) {
+      const startStr = item.start?.dateTime;
+      const endStr = item.end?.dateTime;
+      if (startStr && endStr) {
+        const startDt = dayjs(startStr);
+        const endDt = dayjs(endStr);
+        const startMinutes = startDt.hour() * 60 + startDt.minute();
+        const endMinutes = endDt.hour() * 60 + endDt.minute();
+        intervals.push({ startMinutes, endMinutes });
+      }
+    }
+    return intervals;
+  } catch (err) {
+    console.warn('[CalendarService] Could not fetch calendar events for availability:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Check if a time slot has a conflict in Google Calendar.
+ */
+function hasCalendarConflict(slotHHMM, durationMinutes, busyIntervals) {
+  const [hh, mm] = slotHHMM.split(':').map(Number);
+  const slotStart = hh * 60 + mm;
+  const slotEnd = slotStart + (durationMinutes || 30);
+
+  for (const interval of busyIntervals) {
+    // Conflict exists if slot overlaps interval:
+    // slotStart < interval.end && slotEnd > interval.start
+    if (slotStart < interval.endMinutes && slotEnd > interval.startMinutes) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Get available slots for a specific employee on a date.
+ * Combines Supabase appointments AND Google Calendar events.
+ */
+export async function getAvailableSlotsForEmployee(employeeId, date, durationMinutes = 45) {
+  const [supabaseBooked, gcalBusy] = await Promise.all([
+    getSupabaseBookedSlots(employeeId, date),
+    getGoogleCalendarBusyIntervals(date),
+  ]);
+
   const allSlots = generateSlots();
   const now = dayjs();
   const isToday = dayjs(date).isSame(now, 'day');
 
   return allSlots.filter(slot => {
-    if (bookedTimes.has(slot)) return false;
+    // 1. Check Supabase conflict
+    if (supabaseBooked.has(slot)) return false;
+
+    // 2. Check Google Calendar conflict
+    if (hasCalendarConflict(slot, durationMinutes, gcalBusy)) return false;
+
+    // 3. Filter past slots if today
     if (isToday) {
       const [hh, mm] = slot.split(':').map(Number);
       const slotDt = now.startOf('day').add(hh * 60 + mm, 'minute');
       if (slotDt.isBefore(now)) return false;
     }
+
     return true;
   });
 }
 
 /**
+ * Check if a specific slot is available for an employee on a date.
+ * Validates against BOTH Supabase and Google Calendar.
+ */
+export async function isSlotAvailable(employeeId, date, time, durationMinutes = 45) {
+  const [supabaseBooked, gcalBusy] = await Promise.all([
+    getSupabaseBookedSlots(employeeId, date),
+    getGoogleCalendarBusyIntervals(date),
+  ]);
+
+  if (supabaseBooked.has(time)) {
+    return false;
+  }
+
+  if (hasCalendarConflict(time, durationMinutes, gcalBusy)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Find the best available employee+slot near the requested time.
  * Used when customer has no preference ("anyone is fine").
- *
- * @param {string} serviceId
- * @param {string} date
- * @param {string|null} preferredTime - HH:MM or null
- * @returns {Array} [{employee, availableSlots, bestSlot}] sorted by proximity to preferredTime
  */
-export async function findBestAvailable(serviceId, date, preferredTime) {
+export async function findBestAvailable(serviceId, date, preferredTime, durationMinutes = 45) {
   const employees = await getEmployeesForService(serviceId);
   if (employees.length === 0) return [];
 
   const results = [];
 
   for (const employee of employees) {
-    const slots = await getAvailableSlotsForEmployee(employee.id, date);
+    const slots = await getAvailableSlotsForEmployee(employee.id, date, durationMinutes);
     if (slots.length === 0) continue;
 
     let bestSlot = slots[0];
@@ -127,18 +215,10 @@ export async function findBestAvailable(serviceId, date, preferredTime) {
 }
 
 /**
- * Check if a specific employee is available at a specific time on a date.
- */
-export async function isSlotAvailable(employeeId, date, time) {
-  const booked = await getBookedSlotsForEmployee(employeeId, date);
-  return !booked.has(time);
-}
-
-/**
  * Get alternatives near a requested time for a specific employee.
  */
-export async function getAlternativesForEmployee(employeeId, date, requestedTime, count = 3) {
-  const available = await getAvailableSlotsForEmployee(employeeId, date);
+export async function getAlternativesForEmployee(employeeId, date, requestedTime, count = 3, durationMinutes = 45) {
+  const available = await getAvailableSlotsForEmployee(employeeId, date, durationMinutes);
   if (available.length === 0) return [];
 
   const [reqHH, reqMM] = requestedTime.split(':').map(Number);
