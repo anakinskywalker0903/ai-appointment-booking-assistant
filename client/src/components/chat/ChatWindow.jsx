@@ -1,8 +1,16 @@
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
 
+const SERVICE_PRICES = {
+  'Haircut': '$45',
+  'Hair Spa': '$65',
+  'Hair Coloring': '$95',
+  'Facial': '$55',
+  'Beard Trim': '$25',
+};
+
 /**
- * Scrollable chat message list with avatars, typing indicator, and inline suggested slots card.
+ * Scrollable chat message list with avatars, typing indicator, and inline suggested slots card with estimated price.
  */
 export default function ChatWindow({ messages, pendingBooking, loading, onConfirm, onCancel }) {
   const bottomRef = useRef(null);
@@ -30,14 +38,21 @@ export default function ChatWindow({ messages, pendingBooking, loading, onConfir
       {messages.map(msg => (
         <MessageBubble key={msg.id} role={msg.role} text={msg.text}>
 
-          {/* Inline Suggested Slot Card (Matching the reference design!) */}
+          {/* Inline Suggested Slot Card with Estimated Price */}
           {msg.role === 'assistant' && pendingBooking && msg.id === lastMsgId && (
             <div className="inline-slot-container">
               <div className="inline-slot-label">SUGGESTED SLOT</div>
               <div className="inline-slot-card neo-shadow-md">
                 <div className="inline-slot-header">
                   <span className="inline-slot-date">{formatDate(pendingBooking.date)}</span>
-                  <span className="inline-slot-duration">{pendingBooking.durationMin || 45} mins</span>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span className="inline-slot-price">
+                      Est. {SERVICE_PRICES[pendingBooking.serviceName] || '$45'}
+                    </span>
+                    <span className="inline-slot-duration">
+                      {pendingBooking.durationMin || 45} mins
+                    </span>
+                  </div>
                 </div>
 
                 <div className="inline-slot-body">

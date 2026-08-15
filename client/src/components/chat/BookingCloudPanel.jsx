@@ -1,6 +1,14 @@
+const SERVICE_PRICES = {
+  'Haircut': '$45',
+  'Hair Spa': '$65',
+  'Hair Coloring': '$95',
+  'Facial': '$55',
+  'Beard Trim': '$25',
+};
+
 /**
  * BookingCloudPanel — Right-hand side cloud panel showing real-time
- * user selections, floating chips, pending booking confirmation, and Clear/Restart Chat option.
+ * user selections, floating chips, estimated price, pending booking confirmation, and Clear/Restart Chat option.
  */
 export default function BookingCloudPanel({
   intent,
@@ -17,6 +25,7 @@ export default function BookingCloudPanel({
   const duration = pendingBooking?.durationMin  || null;
   const name     = pendingBooking?.customerName || intent?.customerName       || null;
   const email    = pendingBooking?.customerEmail || intent?.customerEmail     || null;
+  const price    = service ? SERVICE_PRICES[service] || '$45' : null;
 
   function formatDate(d) {
     if (!d) return null;
@@ -31,13 +40,14 @@ export default function BookingCloudPanel({
   }
 
   const chips = [
-    { icon: 'content_cut',     label: service,             tag: 'Service',  key: 'service' },
-    { icon: 'person',          label: stylist,             tag: 'Stylist',  key: 'stylist' },
-    { icon: 'calendar_today',  label: formatDate(date),    tag: 'Date',     key: 'date' },
-    { icon: 'schedule',        label: formatTime(time),    tag: 'Time',     key: 'time' },
+    { icon: 'content_cut',     label: service,             tag: 'Service',     key: 'service' },
+    { icon: 'payments',        label: price,               tag: 'Est. Cost',   key: 'price' },
+    { icon: 'person',          label: stylist,             tag: 'Stylist',     key: 'stylist' },
+    { icon: 'calendar_today',  label: formatDate(date),    tag: 'Date',        key: 'date' },
+    { icon: 'schedule',        label: formatTime(time),    tag: 'Time',        key: 'time' },
     { icon: 'timer',           label: duration ? `${duration} min` : null, tag: 'Duration', key: 'duration' },
-    { icon: 'badge',           label: name,                tag: 'Name',     key: 'name' },
-    { icon: 'mail',            label: email,               tag: 'Email',    key: 'email' },
+    { icon: 'badge',           label: name,                tag: 'Name',        key: 'name' },
+    { icon: 'mail',            label: email,               tag: 'Email',       key: 'email' },
   ].filter(c => c.label);
 
   const hasSelections = chips.length > 0;
@@ -80,7 +90,7 @@ export default function BookingCloudPanel({
             </div>
             <p className="cloud-empty-title">Waiting for your request...</p>
             <p className="cloud-empty-desc">
-              Your chosen service, stylist, date, and time will float into this cloud as we talk.
+              Your chosen service, estimated price, stylist, date, and time will float into this cloud as we talk.
             </p>
           </div>
         ) : (
@@ -116,7 +126,10 @@ export default function BookingCloudPanel({
               <div className="cloud-pending-meta">
                 {pendingBooking.serviceName} with <strong>{pendingBooking.employeeName}</strong>
               </div>
-              <div className="cloud-pending-date">{formatDate(pendingBooking.date)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.78rem', fontWeight: 800 }}>
+                <span className="cloud-pending-date">{formatDate(pendingBooking.date)}</span>
+                <span style={{ color: 'var(--orange)' }}>Est. {SERVICE_PRICES[pendingBooking.serviceName] || '$45'}</span>
+              </div>
             </div>
 
             <div className="cloud-pending-actions">
