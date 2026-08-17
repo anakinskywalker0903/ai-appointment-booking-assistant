@@ -46,9 +46,8 @@ The JSON object must have exactly these fields:
 // Groq's free tier is generous, but we keep a cascade for resilience.
 
 const MODEL_CASCADE = [
-  'llama-3.3-70b-versatile',  // Primary — best quality
-  'llama-3.1-8b-instant',     // Fallback — fastest
-  'gemma2-9b-it',             // Last resort
+  'groq/compound',       // Primary — top quality compound reasoning model
+  'groq/compound-mini',  // Fallback — high speed lightweight model
 ];
 
 /**
