@@ -59,16 +59,16 @@ YOUR TASK:
 Analyze the customer's message and conversation history, then return a JSON object.
 
 EXTRACTION RULES:
-1. intent: Classify as BOOK_APPOINTMENT, CHECK_AVAILABILITY, CANCEL_APPOINTMENT, or GENERAL. If customer is answering "yes", "confirm", "sure", "ok" to a booking summary, classify as BOOK_APPOINTMENT with confirmationResponse: "YES".
-2. service: Match exactly to a service name (case-insensitive) from [${serviceNames.join(', ')}]. If not in list, set null and ask.
-3. date: Resolve relative dates using the dates above. Output YYYY-MM-DD.
-4. time: Convert to HH:MM 24-hour. "3 PM" → "15:00", "around 3" → "15:00", "morning/afternoon" → null (ask).
+1. intent: Classify as BOOK_APPOINTMENT, CHECK_AVAILABILITY, CANCEL_APPOINTMENT, or GENERAL. If customer is answering "yes", "confirm", "sure", "ok", "ye", "yep" to a booking summary, classify as BOOK_APPOINTMENT with confirmationResponse: "YES".
+2. service: Match to a service name from [${serviceNames.join(', ')}]. Be tolerant of minor typos, misspellings, or variations (e.g. "hairuct", "hircut", "hair cut" → "Haircut", "spaa" → "Hair Spa", "color" → "Hair Coloring", "beard" → "Beard Trim"). If completely unrelated or unknown, set null and politely ask.
+3. date: Resolve relative dates using the dates above. Be tolerant of typos (e.g. "tommroow", "tomorow", "tmrw" → resolve to tomorrow's YYYY-MM-DD). Output YYYY-MM-DD.
+4. time: Convert to HH:MM 24-hour. "3 PM" → "15:00", "around 3" → "15:00", "4" → "16:00", "morning/afternoon" → null (ask).
 5. employeePreference: ALWAYS extract the exact stylist name if mentioned by the customer (e.g. "David", "Sarah", "Emma"), REGARDLESS of whether that stylist offers the requested service or not. NEVER auto-replace the customer's chosen stylist with another stylist in this field. Only set to null if the customer explicitly says "anyone is fine", "no preference", or doesn't mention any stylist name.
 6. customerName: Extract whatever name is provided anywhere in the message (e.g. "for Temp", "for Rohit", "name is Alex", "Temp (temp@...)"). Extract single words or nicknames as the name. Never leave null if a name is given.
 7. customerEmail: Extract any email address provided (e.g. "temp42672@gmail.com").
-8. confirmationResponse: Set to "YES" if customer agrees/confirms ("yes", "confirm", "yep", "sure", "book it", "proceed", "ok", "sounds good"). Set to "NO" if declining ("no", "cancel", "nevermind"). Otherwise null.
+8. confirmationResponse: Set to "YES" if customer agrees/confirms ("yes", "confirm", "yep", "ye", "sure", "book it", "proceed", "ok", "sounds good"). Set to "NO" if declining ("no", "cancel", "nevermind"). Otherwise null.
 9. missingFields: For BOOK_APPOINTMENT, list fields that are still null from: ["service","date","time","customerName","customerEmail"]
-10. message: Your friendly reply to the customer. If all 5 fields are present, summarize warmly and ask: "Shall I confirm this appointment for you?"
+10. message: Your friendly reply to the customer. If service/date/time is partially provided or has typos, acknowledge warmly (e.g., "Got it, a Haircut!") and ask for any remaining missing fields. If all 5 fields are present, summarize warmly and ask: "Shall I confirm this appointment for you?"
 
 IMPORTANT RULES:
 - NEVER make up services, staff, or availability. The backend verifies everything.
