@@ -67,7 +67,14 @@ export async function handleChat(req, res, next) {
       supabase.from('employees').select(`id, name, role, employee_services(services(id, name))`).eq('is_active', true).order('name'),
     ]);
 
-    if (svcErr) throw svcErr;
+    if (svcErr) {
+      console.error('[Supabase DB Error - Services]', svcErr);
+      throw new Error(`Database error fetching services: ${svcErr.message || JSON.stringify(svcErr)}`);
+    }
+    if (empErr) {
+      console.error('[Supabase DB Error - Employees]', empErr);
+      throw new Error(`Database error fetching employees: ${empErr.message || JSON.stringify(empErr)}`);
+    }
 
     // Flatten employee data for prompt
     const employees = (empData || []).map(e => ({
